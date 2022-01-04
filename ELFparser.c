@@ -1,0 +1,101 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <elf.h>
+#include <string.h>
+
+int ELFparse(int);
+Elf64_Ehdr * parse64bitsHeader (int, char *);
+
+int main (int argc, char ** argv) {
+
+	if (argc < 2) {
+		printf ("Usage: %s object_file\n", *argv);
+		return EXIT_FAILURE;
+	}
+
+	int fileDescriptor;
+	if ((fileDescriptor = (open (*(++argv), O_RDONLY))) < 0) {
+		printf ("Could not open the %s file! Is the correct file?\n", *argv);
+		return EXIT_FAILURE;	
+	}
+
+	printf ("Parsing the ELF header of %s!\n", *argv);
+	if (ELFparse (fileDescriptor) < 0) {
+		puts ("Format file doesn't recognized! Is it ELF?");
+		return EXIT_FAILURE;
+	}
+
+	close (fileDescriptor);
+	return 0;
+}
+
+Elf64_Ehdr * parse64bitsHeader (int fd, char * tmp_buffer) {
+	char * current_position = tmp_buffer;
+	read (fd, tmp_buffer, 0x40);
+	Elf64_Ehdr * ElfHeader64 = malloc (0x40);
+	memcpy (ElfHeader64->e_ident, current_position, 0x04);
+	current_position += 0x04;
+	memcpy (ElfHeader64->e_ident + 4, current_position, 0x01);
+	current_position++;
+	memcpy (ElfHeader64->e_ident + 5, current_position, 0x01);
+	current_position++;
+	memcpy (ElfHeader64->e_ident + 6, current_position, 0x01);
+	current_position++;
+	memcpy (ElfHeader64->e_ident + 7, current_position, 0x01);
+	current_position++;
+	memcpy (ElfHeader64->e_ident + 8, current_position, 0x01);
+	current_position++;
+	memcpy (ElfHeader64->e_ident + 9, current_position, 0x07);
+	current_position += 0x07;
+	memcpy (&ElfHeader64->e_type, current_position, 0x02);
+	current_position += 0x02;
+	memcpy (&ElfHeader64->e_machine, current_position, 0x02);
+	current_position += 0x02;
+	memcpy (&ElfHeader64->e_version, current_position, 0x04);
+	current_position += 0x04;
+	memcpy (&ElfHeader64->e_entry, current_position, 0x08);
+	current_position += 0x08;
+	memcpy (&ElfHeader64->e_phoff, current_position, 0x08);
+	current_position += 0x08;
+	memcpy (&ElfHeader64->e_shoff, current_position, 0x08);
+	current_position += 0x08;
+	memcpy (&ElfHeader64->e_flags, current_position, 0x04);
+	current_position += 0x04;
+	memcpy (&ElfHeader64->e_ehsize, current_position, 0x02);
+	current_position += 0x02;
+	memcpy (&ElfHeader64->e_phentsize, current_position, 0x02);
+	current_position += 0x02;
+	memcpy (&ElfHeader64->e_phnum, current_position, 0x02);
+	current_position += 0x02;
+	memcpy (&ElfHeader64->e_shentsize, current_position, 0x02);
+	current_position += 0x02;
+	memcpy (&ElfHeader64->e_shnum, current_position, 0x02);
+	current_position += 0x02;
+	memcpy (&ElfHeader64->e_shstrndx, current_position, 0x02);
+	return ElfHeader64;
+}
+
+int ELFparse (int fd) {
+	
+	char * tmp_buffer = malloc (0x40);
+	read (fd, tmp_buffer, 0x04);
+
+	if (strcmp (tmp_buffer+1, "ELF"))
+		return -1;
+
+	read (fd, tmp_buffer, 0x01);
+	lseek (fd, 0x00, SEEK_SET);
+
+	if (*tmp_buffer == 0x01) {
+		Elf32_Ehdr * header;
+	}
+	else {
+		Elf64_Ehdr * header = parse64bitsHeader (fd, tmp_buffer);
+		free (header);
+	}
+
+	free (tmp_buffer);
+	return 0;
+}
