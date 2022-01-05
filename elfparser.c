@@ -46,6 +46,11 @@ Elf64_Ehdr * parse64bitsHeader (int fd, char * tmp_buffer) {
 	return ElfHeader64;
 }
 
+void show64bitsHeader (Elf64_Ehdr * header) {
+	printf ("MAGIC NUMBER: %c%c%c%c\n", ((header->e_ident[EI_MAG0] == 0x7F) ? '.' : '?'), header->e_ident[EI_MAG1], header->e_ident[EI_MAG2], header->e_ident[EI_MAG3]);
+	printf ("FORMAT: %d bits\n", (header->e_ident[EI_CLASS] == 0x02) ? 64 : 32);
+}
+
 int ELFparse (int fd) {
 	
 	char * tmp_buffer = malloc (0x40);
@@ -62,6 +67,7 @@ int ELFparse (int fd) {
 	}
 	else {
 		Elf64_Ehdr * header = parse64bitsHeader (fd, tmp_buffer);
+		show64bitsHeader (header);
 		free (header);
 	}
 
